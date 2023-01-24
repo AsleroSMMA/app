@@ -1,0 +1,52 @@
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+    "github.com/dgrijalva/jwt-go"
+    "github.com/gofinance/yahoo"
+)
+
+type Stock struct {
+    Symbol  string  `json:"symbol"`
+    Name string `json:"name"`
+    LastTradePriceOnly float64 `json:"lastTradePriceOnly"`
+    Change float64 `json:"change"`
+    ChangeInPercent float64 `json:"changeInPercent"`
+}
+
+func viewLiveStocks(w http.ResponseWriter, r *http.Request) {
+    // Verify JWT token
+    tokenString := r.Header.Get("Authorization")
+    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        return []byte("secret"), nil
+    })
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+    if !token.Valid {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+    stocks, _ := yahoo.GetQuotes([]string{"AAPL", "GOOG", "MSFT"})
+    json.NewEncoder(w).Encode(stocks)
+}
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class StockService {
+
+  constructor(private http: HttpClient) { }
+
+  getLiveStocks(): Observable<any> {
+    const headers = new HttpHeaders({
+      'Authorization': 'Bearer ' + localStorage.getItem('token')
+    });
+    return this.http.get('http://localhost:8000/viewLiveStocks', {headers});
+  }
+}
